@@ -1,560 +1,314 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
-from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash, check_password_hash
-from werkzeug.utils import secure_filename
-from datetime import datetime
-from pathlib import Path
-from email.message import EmailMessage
-import smtplib
-import os
-import uuid
-
-app = Flask(__name__)
-app.config["SECRET_KEY"] = "devfusion-cms-secret-change-me"
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///devfusion_cms.db"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["MAX_CONTENT_LENGTH"] = 160 * 1024 * 1024
-
-db = SQLAlchemy(app)
-
-VERSION = "DevFusion Studio CMS v2.0"
-DEFAULT_PHONE = "+420 777 185 782"
-DEFAULT_PASSWORD = "admin"
-ADMIN_EMAIL = "duolingodep@gmail.com"
-
-MAIL_USER = os.environ.get("DEVFUSION_MAIL_USER") or os.environ.get("MAIL_USER")
-MAIL_PASSWORD = os.environ.get("DEVFUSION_MAIL_PASSWORD") or os.environ.get("MAIL_PASSWORD")
-MAIL_HOST = os.environ.get("DEVFUSION_MAIL_HOST", "smtp.gmail.com")
-MAIL_PORT = int(os.environ.get("DEVFUSION_MAIL_PORT", "587"))
-
-THEMES = [
-    ("default", "Default Neon"),
-    ("purple", "Purple Core"),
-    ("blue", "Blue Tech"),
-    ("green", "Green Neon"),
-    ("orange", "Orange Energy"),
-    ("red", "Mega Red"),
-    ("black", "Black Pro"),
-    ("gold", "Gold Premium"),
-    ("windows", "Windows Glass"),
-    ("linux", "Linux Terminal"),
-    ("ps5", "PlayStation 5"),
-    ("metro2033", "Metro 2033 Inspired"),
-    ("metroexodus", "Metro Exodus Inspired"),
-    ("sniper", "Sniper Elite Inspired"),
-    ("fortnite", "Fortnite Inspired"),
-]
-
-
-class Setting(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    key = db.Column(db.String(90), unique=True, nullable=False)
-    value = db.Column(db.Text, nullable=False)
-
-
-class SiteLog(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(160), nullable=False)
-    text = db.Column(db.Text, nullable=True)
-    filename = db.Column(db.String(255), nullable=True)
-    media_type = db.Column(db.String(40), default="none")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-
-class Review(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    author = db.Column(db.String(80), nullable=True)
-    text = db.Column(db.Text, nullable=False)
-    sticker = db.Column(db.String(20), default="⭐")
-    anonymous = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-
-class AdBlock(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(160), nullable=False)
-    text = db.Column(db.Text, nullable=True)
-    link = db.Column(db.String(500), nullable=True)
-    filename = db.Column(db.String(255), nullable=True)
-    media_type = db.Column(db.String(40), default="image")
-    enabled = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-
-class CustomBlock(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(160), nullable=False)
-    text = db.Column(db.Text, nullable=False)
-    icon = db.Column(db.String(20), default="✨")
-    enabled = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-
-class CustomPage(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    slug = db.Column(db.String(80), unique=True, nullable=False)
-    title = db.Column(db.String(160), nullable=False)
-    body = db.Column(db.Text, nullable=False)
-    enabled = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-
-def setting(key, default=""):
+==> Cloning from https://github.com/duolingodep-tech/DevFusion-CMS
+==> Checking out commit 12bfd32155215d33a957a619cd3fa41acefcfc39 in branch main
+==> Using Python version 3.14.3 (default)
+==> Docs on specifying a Python version: https://render.com/docs/python-version
+==> Installing Python version 3.14.3...
+==> Using Poetry version 2.1.3 (default)
+==> Docs on specifying a Poetry version: https://render.com/docs/poetry-version
+==> Running build command 'pip install -r requirements.txt'...
+Collecting Flask==3.0.3 (from -r requirements.txt (line 1))
+  Downloading flask-3.0.3-py3-none-any.whl.metadata (3.2 kB)
+Collecting Flask-SQLAlchemy==3.1.1 (from -r requirements.txt (line 2))
+  Downloading flask_sqlalchemy-3.1.1-py3-none-any.whl.metadata (3.4 kB)
+Collecting Werkzeug==3.0.3 (from -r requirements.txt (line 3))
+  Downloading werkzeug-3.0.3-py3-none-any.whl.metadata (3.7 kB)
+Collecting gunicorn==23.0.0 (from -r requirements.txt (line 4))
+  Downloading gunicorn-23.0.0-py3-none-any.whl.metadata (4.4 kB)
+Collecting Jinja2>=3.1.2 (from Flask==3.0.3->-r requirements.txt (line 1))
+  Downloading jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)
+Collecting itsdangerous>=2.1.2 (from Flask==3.0.3->-r requirements.txt (line 1))
+  Downloading itsdangerous-2.2.0-py3-none-any.whl.metadata (1.9 kB)
+Collecting click>=8.1.3 (from Flask==3.0.3->-r requirements.txt (line 1))
+  Downloading click-8.4.2-py3-none-any.whl.metadata (2.6 kB)
+Collecting blinker>=1.6.2 (from Flask==3.0.3->-r requirements.txt (line 1))
+  Downloading blinker-1.9.0-py3-none-any.whl.metadata (1.6 kB)
+Collecting sqlalchemy>=2.0.16 (from Flask-SQLAlchemy==3.1.1->-r requirements.txt (line 2))
+  Downloading sqlalchemy-2.0.51-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (9.5 kB)
+Collecting MarkupSafe>=2.1.1 (from Werkzeug==3.0.3->-r requirements.txt (line 3))
+  Downloading markupsafe-3.0.3-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)
+Collecting packaging (from gunicorn==23.0.0->-r requirements.txt (line 4))
+  Downloading packaging-26.2-py3-none-any.whl.metadata (3.5 kB)
+Collecting greenlet>=1 (from sqlalchemy>=2.0.16->Flask-SQLAlchemy==3.1.1->-r requirements.txt (line 2))
+  Downloading greenlet-3.5.3-cp314-cp314-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (3.8 kB)
+Collecting typing-extensions>=4.6.0 (from sqlalchemy>=2.0.16->Flask-SQLAlchemy==3.1.1->-r requirements.txt (line 2))
+  Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+Downloading flask-3.0.3-py3-none-any.whl (101 kB)
+Downloading flask_sqlalchemy-3.1.1-py3-none-any.whl (25 kB)
+Downloading werkzeug-3.0.3-py3-none-any.whl (227 kB)
+Downloading gunicorn-23.0.0-py3-none-any.whl (85 kB)
+Downloading blinker-1.9.0-py3-none-any.whl (8.5 kB)
+Downloading click-8.4.2-py3-none-any.whl (119 kB)
+Downloading itsdangerous-2.2.0-py3-none-any.whl (16 kB)
+Downloading jinja2-3.1.6-py3-none-any.whl (134 kB)
+Downloading markupsafe-3.0.3-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (23 kB)
+Downloading sqlalchemy-2.0.51-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (3.3 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.3/3.3 MB 62.3 MB/s  0:00:00
+Downloading greenlet-3.5.3-cp314-cp314-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (663 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 663.6/663.6 kB 23.7 MB/s  0:00:00
+Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+Downloading packaging-26.2-py3-none-any.whl (100 kB)
+Installing collected packages: typing-extensions, packaging, MarkupSafe, itsdangerous, greenlet, click, blinker, Werkzeug, sqlalchemy, Jinja2, gunicorn, Flask, Flask-SQLAlchemy
+Successfully installed Flask-3.0.3 Flask-SQLAlchemy-3.1.1 Jinja2-3.1.6 MarkupSafe-3.0.3 Werkzeug-3.0.3 blinker-1.9.0 click-8.4.2 greenlet-3.5.3 gunicorn-23.0.0 itsdangerous-2.2.0 packaging-26.2 sqlalchemy-2.0.51 typing-extensions-4.16.0
+[notice] A new release of pip is available: 25.3 -> 26.1.2
+[notice] To update, run: pip install --upgrade pip
+==> Uploading build...
+==> Uploaded in 6.0s. Compression took 1.9s
+==> Build successful 🎉
+==> Deploying...
+==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+==> Running 'gunicorn app:app'
+[2026-07-03 15:16:39 +0000] [57] [INFO] Starting gunicorn 23.0.0
+[2026-07-03 15:16:39 +0000] [57] [INFO] Listening at: http://0.0.0.0:10000 (57)
+[2026-07-03 15:16:39 +0000] [57] [INFO] Using worker: sync
+[2026-07-03 15:16:39 +0000] [59] [INFO] Booting worker with pid: 59
+[2026-07-03 15:16:41,220] ERROR in app: Exception on / [HEAD]
+Traceback (most recent call last):
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: setting
+The above exception was the direct cause of the following exception:
+Traceback (most recent call last):
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/flask/app.py", line 878, in full_dispatch_request
+    rv = self.preprocess_request()
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/flask/app.py", line 1253, in preprocess_request
+    rv = self.ensure_sync(before_func)()
+  File "/opt/render/project/src/app.py", line 180, in guard
+    setup()
+    ~~~~~^^
+  File "/opt/render/project/src/app.py", line 122, in setup
+    if not setting(k):
+           ~~~~~~~^^^
+  File "/opt/render/project/src/app.py", line 95, in setting
     s = Setting.query.filter_by(key=key).first()
-    return s.value if s else default
-
-
-def set_setting(key, value):
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/orm/query.py", line 2766, in first
+    return self.limit(1)._iter().first()  # type: ignore
+           ~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/orm/query.py", line 2864, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+        params,
+        ^^^^^^^
+        execution_options={"_sa_orm_load_options": self.load_options},
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/orm/session.py", line 2373, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/orm/session.py", line 2271, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
+    )
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1421, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1643, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1848, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1988, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 2365, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: setting
+[SQL: SELECT setting.id AS setting_id, setting."key" AS setting_key, setting.value AS setting_value 
+FROM setting 
+WHERE setting."key" = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('password', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+127.0.0.1 - - [03/Jul/2026:15:16:41 +0000] "HEAD / HTTP/1.1" 500 0 "-" "Go-http-client/1.1"
+==> Your service is live 🎉
+==> 
+==> ///////////////////////////////////////////////////////////
+==> 
+==> Available at your primary URL https://devfusion-cms.onrender.com
+==> 
+==> ///////////////////////////////////////////////////////////
+[2026-07-03 15:16:45,919] ERROR in app: Exception on / [GET]
+Traceback (most recent call last):
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: setting
+The above exception was the direct cause of the following exception:
+Traceback (most recent call last):
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/flask/app.py", line 878, in full_dispatch_request
+    rv = self.preprocess_request()
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/flask/app.py", line 1253, in preprocess_request
+    rv = self.ensure_sync(before_func)()
+  File "/opt/render/project/src/app.py", line 180, in guard
+    setup()
+    ~~~~~^^
+  File "/opt/render/project/src/app.py", line 122, in setup
+    if not setting(k):
+           ~~~~~~~^^^
+  File "/opt/render/project/src/app.py", line 95, in setting
     s = Setting.query.filter_by(key=key).first()
-    if not s:
-        db.session.add(Setting(key=key, value=value))
-    else:
-        s.value = value
-    db.session.commit()
-
-
-def admin():
-    return session.get("admin") is True
-
-
-def setup():
-    defaults = {
-        "password": generate_password_hash(DEFAULT_PASSWORD),
-        "phone": DEFAULT_PHONE,
-        "theme": "default",
-        "maintenance": "off",
-        "ads_enabled": "on",
-        "site_title": "DevFusion Studio",
-        "hero_text": "Разработка Android-проектов, сайтов, 3D-моделей, постпроцессоров и помощь с PowerMill.",
-        "custom_css": "",
-    }
-
-    for k, v in defaults.items():
-        if not setting(k):
-            set_setting(k, v)
-
-
-def init_database():
-    with app.app_context():
-        db.create_all()
-        setup()
-
-
-def save_upload(file, folder, allowed):
-    if not file or not file.filename:
-        return None
-
-    ext = file.filename.rsplit(".", 1)[-1].lower()
-    if ext not in allowed:
-        return None
-
-    name = f"{uuid.uuid4().hex}_{secure_filename(file.filename)}"
-    folder.mkdir(parents=True, exist_ok=True)
-    file.save(folder / name)
-    return name
-
-
-def send_project_email(real_name, phone, project_title, description, file_path=None, original_filename=None):
-    subject = f"Новый заказ DevFusion: {project_title}"
-    body = f"""Новый заказ с сайта DevFusion.
-
-Заказчик: {real_name}
-Номер телефона: {phone}
-
-Название проекта:
-{project_title}
-
-Описание проекта:
-{description}
-"""
-
-    if not MAIL_USER or not MAIL_PASSWORD:
-        print("\n--- PROJECT EMAIL NOT SENT: SMTP NOT CONFIGURED ---")
-        print("TO:", ADMIN_EMAIL)
-        print("SUBJECT:", subject)
-        print(body)
-        print("--- END PROJECT EMAIL DEBUG ---\n")
-        return False
-
-    msg = EmailMessage()
-    msg["From"] = MAIL_USER
-    msg["To"] = ADMIN_EMAIL
-    msg["Subject"] = subject
-    msg.set_content(body)
-
-    if file_path and Path(file_path).exists():
-        data = Path(file_path).read_bytes()
-        filename = original_filename or Path(file_path).name
-        msg.add_attachment(
-            data,
-            maintype="application",
-            subtype="octet-stream",
-            filename=filename,
-        )
-
-    with smtplib.SMTP(MAIL_HOST, MAIL_PORT) as smtp:
-        smtp.starttls()
-        smtp.login(MAIL_USER, MAIL_PASSWORD)
-        smtp.send_message(msg)
-
-    return True
-
-
-init_database()
-
-
-@app.before_request
-def guard():
-    if request.endpoint in ["admin_login", "static"]:
-        return
-
-    if setting("maintenance", "off") == "on" and not admin():
-        return render_template("maintenance.html"), 503
-
-
-@app.context_processor
-def ctx():
-    return {
-        "version": VERSION,
-        "phone": setting("phone", DEFAULT_PHONE),
-        "theme": setting("theme", "default"),
-        "is_admin": admin(),
-        "maintenance": setting("maintenance", "off"),
-        "ads_enabled": setting("ads_enabled", "on"),
-        "site_title": setting("site_title", "DevFusion Studio"),
-        "hero_text": setting("hero_text", ""),
-        "custom_css": setting("custom_css", ""),
-        "pages_nav": CustomPage.query.filter_by(enabled=True).order_by(CustomPage.created_at.desc()).all(),
-        "themes": THEMES,
-    }
-
-
-@app.route("/")
-def index():
-    services = [
-        ("📱", "Android-проекты", "Прошивки Android, портирование, TWRP, Magisk, исправление ошибок и консультации."),
-        ("🌐", "Создание сайтов", "Сайты-визитки, лендинги, сайты на несколько страниц, форумы, магазины и кабинеты."),
-        ("🎨", "3D-модели", "Модели разной сложности: от простых объектов до тяжёлых технических проектов."),
-        ("⚙️", "PowerMill", "PowerMill, CAM-проекты, станки и создание постпроцессоров."),
-    ]
-
-    prices = [
-        ("3D-модели", [
-            ("Простая модель", "1 000–2 000 Kč"),
-            ("Средняя модель", "3 000–10 000 Kč"),
-            ("Средне-сложная", "10 000–20 000 Kč"),
-            ("Сложная", "20 000–40 000 Kč"),
-            ("Очень тяжёлая", "30 000–100 000 Kč"),
-        ]),
-        ("Сайты", [
-            ("Сайт-визитка", "5 000–10 000 Kč"),
-            ("Сайт 1–5 страниц", "10 000–20 000 Kč"),
-            ("Форум / крупный сайт", "20 000–40 000 Kč"),
-            ("Магазин / кабинет", "40 000–100 000 Kč"),
-        ]),
-        ("Android", [
-            ("Простое устройство", "5 000–10 000 Kč"),
-            ("Сложное устройство", "10 000–12 000 Kč"),
-        ]),
-    ]
-
-    return render_template(
-        "index.html",
-        services=services,
-        prices=prices,
-        logs=SiteLog.query.order_by(SiteLog.created_at.desc()).all(),
-        reviews=Review.query.order_by(Review.created_at.desc()).all(),
-        ads=AdBlock.query.filter_by(enabled=True).order_by(AdBlock.created_at.desc()).all(),
-        blocks=CustomBlock.query.filter_by(enabled=True).order_by(CustomBlock.created_at.desc()).all(),
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/orm/query.py", line 2766, in first
+    return self.limit(1)._iter().first()  # type: ignore
+           ~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/orm/query.py", line 2864, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+        params,
+        ^^^^^^^
+        execution_options={"_sa_orm_load_options": self.load_options},
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
-
-
-@app.route("/page/<slug>")
-def custom_page(slug):
-    page = CustomPage.query.filter_by(slug=slug, enabled=True).first_or_404()
-    return render_template("custom_page.html", page=page)
-
-
-@app.route("/review", methods=["POST"])
-def add_review():
-    text = request.form.get("text", "").strip()
-
-    if not text:
-        flash("Комментарий пустой.", "error")
-        return redirect(url_for("index") + "#reviews")
-
-    anonymous = request.form.get("anonymous") == "yes"
-    author = None if anonymous else (request.form.get("author", "").strip() or "Гость")
-
-    db.session.add(
-        Review(
-            author=author,
-            text=text,
-            sticker=request.form.get("sticker", "⭐"),
-            anonymous=anonymous,
-        )
+    ^
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/orm/session.py", line 2373, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
     )
-    db.session.commit()
-
-    flash("Комментарий добавлен.", "success")
-    return redirect(url_for("index") + "#reviews")
-
-
-@app.route("/admin-login", methods=["GET", "POST"])
-def admin_login():
-    if request.method == "POST":
-        if check_password_hash(setting("password"), request.form.get("password", "")):
-            session["admin"] = True
-            return redirect(url_for("admin_panel"))
-
-        flash("Неверный пароль.", "error")
-
-    return render_template("admin_login.html")
-
-
-@app.route("/admin")
-def admin_panel():
-    if not admin():
-        return redirect(url_for("admin_login"))
-
-    return render_template(
-        "admin.html",
-        logs=SiteLog.query.order_by(SiteLog.created_at.desc()).all(),
-        reviews=Review.query.order_by(Review.created_at.desc()).all(),
-        ads=AdBlock.query.order_by(AdBlock.created_at.desc()).all(),
-        blocks=CustomBlock.query.order_by(CustomBlock.created_at.desc()).all(),
-        pages=CustomPage.query.order_by(CustomPage.created_at.desc()).all(),
+    ^
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/orm/session.py", line 2271, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
     )
-
-
-@app.route("/admin/logout")
-def admin_logout():
-    session.clear()
-    return redirect(url_for("index"))
-
-
-@app.route("/admin/settings", methods=["POST"])
-def admin_settings():
-    if not admin():
-        return redirect(url_for("admin_login"))
-
-    for key in ["maintenance", "ads_enabled", "theme", "phone", "site_title", "hero_text"]:
-        set_setting(key, request.form.get(key, setting(key)))
-
-    return redirect(url_for("admin_panel"))
-
-
-@app.route("/admin/password", methods=["POST"])
-def admin_password():
-    if not admin():
-        return redirect(url_for("admin_login"))
-
-    p = request.form.get("password", "").strip()
-
-    if p:
-        set_setting("password", generate_password_hash(p))
-        flash("Пароль изменён.", "success")
-
-    return redirect(url_for("admin_panel"))
-
-
-@app.route("/admin/log/add", methods=["POST"])
-def add_log():
-    if not admin():
-        return redirect(url_for("admin_login"))
-
-    file = request.files.get("file")
-    media_type = request.form.get("media_type", "none")
-
-    filename = save_upload(
-        file,
-        Path("static/uploads/news"),
-        {"png", "jpg", "jpeg", "gif", "webp", "mp4", "webm", "mov", "mp3", "wav", "ogg", "m4a"},
+    ^
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
     )
-
-    db.session.add(
-        SiteLog(
-            title=request.form.get("title", "Новость"),
-            text=request.form.get("text", ""),
-            filename=filename,
-            media_type=media_type,
-        )
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1421, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
     )
-    db.session.commit()
-
-    return redirect(url_for("admin_panel"))
-
-
-@app.route("/admin/ad/add", methods=["POST"])
-def add_ad():
-    if not admin():
-        return redirect(url_for("admin_login"))
-
-    file = request.files.get("file")
-    media_type = request.form.get("media_type", "image")
-
-    filename = save_upload(
-        file,
-        Path("static/uploads/ads"),
-        {"png", "jpg", "jpeg", "gif", "webp", "mp4", "webm", "mov"},
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
-
-    db.session.add(
-        AdBlock(
-            title=request.form.get("title", "Реклама"),
-            text=request.form.get("text", ""),
-            link=request.form.get("link", ""),
-            filename=filename,
-            media_type=media_type,
-            enabled=True,
-        )
+    ^
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1643, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
     )
-    db.session.commit()
-
-    return redirect(url_for("admin_panel"))
-
-
-@app.route("/admin/block/add", methods=["POST"])
-def add_block():
-    if not admin():
-        return redirect(url_for("admin_login"))
-
-    db.session.add(
-        CustomBlock(
-            title=request.form.get("title", "Новая плитка"),
-            text=request.form.get("text", ""),
-            icon=request.form.get("icon", "✨"),
-            enabled=True,
-        )
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1848, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
-    db.session.commit()
-
-    return redirect(url_for("admin_panel"))
-
-
-@app.route("/admin/page/add", methods=["POST"])
-def add_page():
-    if not admin():
-        return redirect(url_for("admin_login"))
-
-    slug = secure_filename(request.form.get("slug", "page")).lower() or "page"
-
-    db.session.add(
-        CustomPage(
-            slug=slug,
-            title=request.form.get("title", "Новая страница"),
-            body=request.form.get("body", ""),
-            enabled=True,
-        )
+    ^
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1988, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
-    db.session.commit()
-
-    return redirect(url_for("admin_panel"))
-
-
-@app.route("/admin/css/upload", methods=["POST"])
-def upload_css():
-    if not admin():
-        return redirect(url_for("admin_login"))
-
-    filename = save_upload(request.files.get("css"), Path("static/custom"), {"css"})
-
-    if filename:
-        set_setting("custom_css", filename)
-        flash("CSS загружен.", "success")
-    else:
-        flash("Нужен файл .css", "error")
-
-    return redirect(url_for("admin_panel"))
-
-
-@app.route("/admin/toggle/<kind>/<int:id>")
-def toggle_item(kind, id):
-    if not admin():
-        return redirect(url_for("admin_login"))
-
-    model = {"ad": AdBlock, "block": CustomBlock, "page": CustomPage}.get(kind)
-
-    if not model:
-        return redirect(url_for("admin_panel"))
-
-    item = model.query.get_or_404(id)
-    item.enabled = not item.enabled
-    db.session.commit()
-
-    return redirect(url_for("admin_panel"))
-
-
-@app.route("/admin/delete/<kind>/<int:id>")
-def delete_item(kind, id):
-    if not admin():
-        return redirect(url_for("admin_login"))
-
-    model = {
-        "ad": AdBlock,
-        "block": CustomBlock,
-        "page": CustomPage,
-        "log": SiteLog,
-        "review": Review,
-    }.get(kind)
-
-    if not model:
-        return redirect(url_for("admin_panel"))
-
-    item = model.query.get_or_404(id)
-    db.session.delete(item)
-    db.session.commit()
-
-    return redirect(url_for("admin_panel"))
-
-
-@app.route("/send-project", methods=["POST"])
-def send_project():
-    real_name = request.form.get("real_name", "").strip()
-    customer_phone = request.form.get("customer_phone", "").strip()
-    project_title = request.form.get("project_title", "").strip()
-    description = request.form.get("description", "").strip()
-
-    if not real_name or not customer_phone or not project_title or not description:
-        flash("Заполни имя, номер, название проекта и описание.", "error")
-        return redirect(url_for("index") + "#send-project")
-
-    file = request.files.get("file")
-    file_path = None
-    original_filename = None
-
-    if file and file.filename:
-        original_filename = file.filename
-        saved_name = save_upload(
-            file,
-            Path("static/uploads/orders"),
-            {
-                "png", "jpg", "jpeg", "gif", "webp",
-                "mp4", "webm", "mov",
-                "mp3", "wav", "ogg", "m4a",
-                "zip", "rar", "7z", "pdf", "txt", "doc", "docx",
-            },
-        )
-
-        if saved_name:
-            file_path = Path("static/uploads/orders") / saved_name
-
-    ok = send_project_email(
-        real_name,
-        customer_phone,
-        project_title,
-        description,
-        file_path,
-        original_filename,
+    ^
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 2365, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     )
-
-    if ok:
-        flash("Заявка отправлена на почту создателя.", "success")
-    else:
-        flash("SMTP не настроен. Заявка выведена в консоль сервера.", "error")
-
-    return redirect(url_for("index") + "#send-project")
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
+    ^
+  File "/opt/render/project/src/.venv/lib/python3.14/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: setting
+[SQL: SELECT setting.id AS setting_id, setting."key" AS setting_key, setting.value AS setting_value 
+FROM setting 
+WHERE setting."key" = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('password', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+127.0.0.1 - - [03/Jul/2026:15:16:45 +0000] "GET / HTTP/1.1" 500 265 "-" "Go-http-client/2.0"
