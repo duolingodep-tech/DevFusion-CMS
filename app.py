@@ -11,13 +11,20 @@ import uuid
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "devfusion-cms-secret-change-me")
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///devfusion_cms.db")
+
+database_url = os.environ.get("DATABASE_URL", "sqlite:///devfusion_cms.db")
+
+# Render/PostgreSQL sometimes gives postgres://, but SQLAlchemy needs postgresql://
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["MAX_CONTENT_LENGTH"] = 160 * 1024 * 1024
 
 db = SQLAlchemy(app)
 
-VERSION = "DevFusion Studio CMS v2.0"
+VERSION = "DevFusion Studio CMS v2.1 PostgreSQL"
 DEFAULT_PHONE = "+420 777 185 782"
 DEFAULT_PASSWORD = "admin"
 ADMIN_EMAIL = "duolingodep@gmail.com"
@@ -100,16 +107,16 @@ class CustomPage(db.Model):
 
 
 def setting(key, default=""):
-    s = Setting.query.filter_by(key=key).first()
-    return s.value if s else default
+    item = Setting.query.filter_by(key=key).first()
+    return item.value if item else default
 
 
 def set_setting(key, value):
-    s = Setting.query.filter_by(key=key).first()
-    if not s:
+    item = Setting.query.filter_by(key=key).first()
+    if not item:
         db.session.add(Setting(key=key, value=value))
     else:
-        s.value = value
+        item.value = value
     db.session.commit()
 
 
@@ -117,7 +124,7 @@ def admin():
     return session.get("admin") is True
 
 
-def setup():
+def setup_defaults():
     defaults = {
         "password": generate_password_hash(DEFAULT_PASSWORD),
         "phone": DEFAULT_PHONE,
@@ -138,7 +145,7 @@ def setup():
 def init_database():
     with app.app_context():
         db.create_all()
-        setup()
+        setup_defaults()
 
 
 def save_upload(file, folder, allowed):
@@ -201,10 +208,9 @@ def send_project_email(real_name, phone, project_title, description, file_path=N
     return True
 
 
-# ВАЖНО: Render запускает проект командой gunicorn app:app.
-# При таком запуске блок if __name__ == "__main__" НЕ выполняется.
-# Поэтому базу данных создаём сразу при импорте файла.
-
+# Render запускает проект через gunicorn app:app.
+# Поэтому база создаётся при импорте файла, а не только при локальном py app.py.
+init_database()
 
 
 @app.before_request
@@ -354,10 +360,10 @@ def admin_password():
     if not admin():
         return redirect(url_for("admin_login"))
 
-    p = request.form.get("password", "").strip()
+    new_password = request.form.get("password", "").strip()
 
-    if p:
-        set_setting("password", generate_password_hash(p))
+    if new_password:
+        set_setting("password", generate_password_hash(new_password))
         flash("Пароль изменён.", "success")
 
     return redirect(url_for("admin_panel"))
@@ -558,12 +564,7 @@ def send_project():
     else:
         flash("SMTP не настроен. Заявка выведена в консоль сервера.", "error")
 
-        return redirect(url_for("index") + "#send-project")
-
-
-with app.app_context():
-    db.create_all()
-    setup()
+    return redirect(url_for("index") + "#send-project")
 
 
 if __name__ == "__main__":
