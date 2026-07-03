@@ -1,0 +1,5 @@
+app.py syntax: OK
+templates/index.html: OK
+templates/base.html: OK
+static/uploads/orders: OK
+README.md: OK

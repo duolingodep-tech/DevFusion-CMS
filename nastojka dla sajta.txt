@@ -1,0 +1,5 @@
+yeif qdnf xbfe zyke
+
+set DEVFUSION_MAIL_USER=duolingodep@gmail.com
+set DEVFUSION_MAIL_PASSWORD=yeif qdnf xbfe zyke
+py app.py
