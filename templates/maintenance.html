@@ -1,1 +1,20 @@
-<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Обслуживание</title><link rel="stylesheet" href="{{ url_for('static',filename='style.css') }}"></head><body><canvas id="particles"></canvas><section class="maintenance"><div class="maintenance-box"><h1>Сайт на обслуживании</h1><p>DevFusion Studio сейчас обновляется, тестируется или ремонтируется.</p><p>Связь: <b>{{ phone }}</b></p></div></section><script src="{{ url_for('static',filename='script.js') }}"></script></body></html>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Обслуживание</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="theme-mariana">
+<canvas id="bg"></canvas>
+<section class="maintenance">
+  <div class="form-box">
+    <h1>Сайт на обслуживании</h1>
+    <p>DevFusion KMS сейчас обновляется или проверяется.</p>
+    <b>{{ phone }}</b>
+  </div>
+</section>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

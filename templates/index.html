@@ -1,34 +1,22 @@
-{% extends "base.html" %}{% block content %}
-<section class="hero"><div class="hero-text reveal"><div class="badge">Android • Web • 3D • CAM</div><h1>{{ site_title }}</h1><p>{{ hero_text }}</p></div><div class="hero-card reveal"><div class="terminal"><div class="dots"><span></span><span></span><span></span></div><pre>DevFusion.cms()
-theme = "{{ theme }}"
-version = "{{ version }}"
-status = "ready"</pre></div></div></section>
-{% if ads_enabled=="on" and ads %}<section class="section ad-section reveal"><div class="section-title"><span>Реклама</span><h2>Специальный блок</h2></div>{% for ad in ads %}<article class="ad-card">{% if ad.filename %}{% if ad.media_type=="video" %}<video controls src="{{ url_for('static', filename='uploads/ads/' + ad.filename) }}"></video>{% else %}<img src="{{ url_for('static', filename='uploads/ads/' + ad.filename) }}">{% endif %}{% endif %}<div><h3>{{ ad.title }}</h3><p>{{ ad.text }}</p>{% if ad.link %}<a class="btn primary" href="{{ ad.link }}" target="_blank">Открыть</a>{% endif %}</div></article>{% endfor %}</section>{% endif %}
-<section class="stats reveal"><div><strong>4+</strong><span>направления</span></div><div><strong>CMS</strong><span>редактор сайта</span></div><div><strong>Tech</strong><span>нестандартные задачи</span></div></section>
-<section id="about" class="section reveal"><div class="section-title"><span>Обо мне</span><h2>Я занимаюсь техническими проектами</h2></div><div class="about-box"><p>DevFusion — личная IT-студия для проектов, где нужен не просто шаблон, а техническое мышление.</p><p>Я работаю с Android-прошивками, сайтами, 3D-моделями, CAM-задачами, PowerMill и постпроцессорами.</p></div></section>
+{% extends "base.html" %}
+{% block content %}
+<section class="hero reveal"><div><div class="badge">KMS 3 • PostgreSQL • Shield</div><h1>{{ site_title }}</h1><p>{{ hero_text }}</p></div><div class="terminal-card"><pre>status = online
+theme = {{ theme }}
+security = enabled</pre></div></section>
+
+{% if ads_enabled=="on" and ads %}
+<section class="section reveal"><div class="section-title"><span>Реклама</span><h2>Специальный блок</h2></div>{% for ad in ads %}<article class="wide-card">{% if ad.filename %}{% if ad.media_type=="video" %}<video controls src="{{ url_for('static', filename='uploads/ads/' + ad.filename) }}"></video>{% else %}<img src="{{ url_for('static', filename='uploads/ads/' + ad.filename) }}">{% endif %}{% endif %}<div><h3>{{ ad.title }}</h3><p>{{ ad.text }}</p>{% if ad.link %}<a class="btn primary" href="{{ ad.link }}" target="_blank">Открыть</a>{% endif %}</div></article>{% endfor %}</section>
+{% endif %}
+
 <section id="services" class="section"><div class="section-title reveal"><span>Что я делаю</span><h2>Услуги</h2></div><div class="cards">{% for i,t,x in services %}<article class="card reveal"><div class="icon">{{ i }}</div><h3>{{ t }}</h3><p>{{ x }}</p></article>{% endfor %}</div></section>
-{% if blocks %}<section class="section"><div class="section-title reveal"><span>Дополнительно</span><h2>Новые плитки</h2></div><div class="cards three">{% for b in blocks %}<article class="card reveal"><div class="icon">{{ b.icon }}</div><h3>{{ b.title }}</h3><p>{{ b.text }}</p></article>{% endfor %}</div></section>{% endif %}
-<section id="prices" class="section"><div class="section-title reveal"><span>Стоимость</span><h2>Цены</h2></div><div class="price-grid">{% for title,items in prices %}<article class="price-box reveal"><h3>{{ title }}</h3><ul>{% for name,price in items %}<li><span>{{ name }}</span><b>{{ price }}</b></li>{% endfor %}</ul></article>{% endfor %}</div></section>
-<section id="news" class="section"><div class="section-title reveal"><span>Обновления</span><h2>Новости сайта</h2></div><div class="cards three">{% for log in logs %}<article class="card reveal"><h3>{{ log.title }}</h3><p>{{ log.text }}</p>{% if log.filename %}{% if log.media_type=="video" %}<video controls src="{{ url_for('static', filename='uploads/news/' + log.filename) }}"></video>{% elif log.media_type=="audio" %}<audio controls src="{{ url_for('static', filename='uploads/news/' + log.filename) }}"></audio>{% else %}<img class="media-img" src="{{ url_for('static', filename='uploads/news/' + log.filename) }}">{% endif %}{% endif %}<small>{{ log.created_at.strftime("%d.%m.%Y %H:%M") }}</small></article>{% else %}<article class="card reveal"><h3>Новостей пока нет</h3><p>Скоро здесь появятся обновления.</p></article>{% endfor %}</div></section>
-<section id="reviews" class="section"><div class="section-title reveal"><span>Комментарии</span><h2>Отзывы и комментарии</h2></div><div class="review-form reveal"><form method="post" action="{{ url_for('add_review') }}"><input name="author" placeholder="Ваше имя, если не анонимно"><select name="anonymous"><option value="yes">Анонимно</option><option value="no">Указать имя</option></select><select name="sticker"><option>⭐</option><option>🔥</option><option>💻</option><option>📱</option><option>⚙️</option><option>🚀</option><option>👍</option></select><textarea name="text" placeholder="Ваш комментарий" required></textarea><button class="btn primary">Отправить</button></form></div><div class="cards three">{% for r in reviews %}<article class="review reveal"><div class="sticker">{{ r.sticker }}</div><p>“{{ r.text }}”</p><b>{{ "Аноним" if r.anonymous else r.author }}</b></article>{% else %}<article class="review reveal"><p>Нету комментариев.</p></article>{% endfor %}</div></section>
 
-<section id="send-project" class="section">
-  <div class="section-title reveal">
-    <span>Отправить проект</span>
-    <h2>Хотите отправить заказ прямо сейчас?</h2>
-  </div>
-  <div class="review-form reveal">
-    <p>Укажите реальное имя, номер телефона, название проекта и описание. Можно приложить фото, аудио, видео, архив или документ.</p>
-    <form method="post" action="{{ url_for('send_project') }}" enctype="multipart/form-data">
-      <input name="real_name" placeholder="Ваше реальное имя" required>
-      <input name="customer_phone" placeholder="Ваш номер телефона" required>
-      <input name="project_title" placeholder="Название проекта" required>
-      <textarea name="description" placeholder="Описание проекта" required></textarea>
-      <input type="file" name="file" accept="image/*,video/*,audio/*,.zip,.rar,.7z,.pdf,.txt,.doc,.docx">
-      <button class="btn primary">Отправить проект</button>
-    </form>
-  </div>
-</section>
+{% if blocks %}<section class="section"><div class="section-title reveal"><span>Дополнительно</span><h2>Плитки</h2></div><div class="cards three">{% for b in blocks %}<article class="card reveal"><div class="icon">{{ b.icon }}</div><h3>{{ b.title }}</h3><p>{{ b.text }}</p></article>{% endfor %}</div></section>{% endif %}
 
-<section id="contact" class="section contact reveal"><div class="contact-box"><h2>Хотите заказать проект?</h2><p>Звоните или пишите мне на этот номер:</p><strong>{{ phone }}</strong></div></section>
+<section id="prices" class="section"><div class="section-title reveal"><span>Стоимость</span><h2>Цены</h2></div><div class="price-grid">{% for title,items in prices %}<article class="card reveal"><h3>{{ title }}</h3><ul class="prices">{% for name,price in items %}<li><span>{{ name }}</span><b>{{ price }}</b></li>{% endfor %}</ul></article>{% endfor %}</div></section>
+
+<section id="news" class="section"><div class="section-title reveal"><span>Обновления</span><h2>Новости</h2></div><div class="cards three">{% for log in logs %}<article class="card reveal"><h3>{% if log.pinned %}📌 {% endif %}{{ log.title }}</h3><p>{{ log.text }}</p>{% if log.filename %}{% if log.media_type=="video" %}<video controls src="{{ url_for('static', filename='uploads/news/' + log.filename) }}"></video>{% elif log.media_type=="audio" %}<audio controls src="{{ url_for('static', filename='uploads/news/' + log.filename) }}"></audio>{% else %}<img src="{{ url_for('static', filename='uploads/news/' + log.filename) }}">{% endif %}{% endif %}<small>{{ log.created_at.strftime("%d.%m.%Y %H:%M") }}</small></article>{% else %}<article class="card reveal"><h3>Новостей пока нет</h3><p>Скоро здесь появятся обновления.</p></article>{% endfor %}</div></section>
+
+<section id="reviews" class="section"><div class="section-title reveal"><span>Комментарии</span><h2>Отзывы</h2></div><div class="form-box reveal"><form method="post" action="{{ url_for('add_review') }}"><input name="author" placeholder="Ваше имя"><select name="anonymous"><option value="yes">Анонимно</option><option value="no">Указать имя</option></select><select name="sticker"><option>⭐</option><option>🔥</option><option>🚀</option><option>📱</option><option>💻</option></select><textarea name="text" placeholder="Комментарий" required></textarea><button class="btn primary">Отправить</button></form></div><div class="cards three">{% for r in reviews %}<article class="card reveal"><div class="icon">{{ r.sticker }}</div><p>{{ r.text }}</p><b>{{ "Аноним" if r.anonymous else r.author }}</b></article>{% else %}<article class="card reveal"><p>Нету комментариев.</p></article>{% endfor %}</div></section>
+
+<section id="send-project" class="section"><div class="section-title reveal"><span>Заказ</span><h2>Отправить проект</h2></div><div class="form-box reveal"><form method="post" action="{{ url_for('send_project') }}" enctype="multipart/form-data"><input name="real_name" placeholder="Ваше реальное имя" required><input name="customer_phone" placeholder="Ваш номер телефона" required><input name="project_title" placeholder="Название проекта" required><textarea name="description" placeholder="Описание проекта" required></textarea><input type="file" name="file" accept="image/*,video/*,audio/*,.zip,.rar,.7z,.pdf,.txt,.doc,.docx"><button class="btn primary">Отправить проект</button></form></div></section>
 {% endblock %}

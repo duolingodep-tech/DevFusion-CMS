@@ -1,1 +1,12 @@
-{% extends "base.html" %}{% block content %}<section class="section"><div class="admin-login reveal"><h1>Вход в кабинет</h1><form method="post"><input type="password" name="password" placeholder="Пароль" required><button class="btn primary">Войти</button></form></div></section>{% endblock %}
+{% extends "base.html" %}
+{% block content %}
+<section class="section">
+  <div class="form-box">
+    <h1>Вход администратора</h1>
+    <form method="post">
+      <input type="password" name="password" placeholder="Пароль" required>
+      <button class="btn primary">Войти</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

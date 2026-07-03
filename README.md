@@ -1,48 +1,20 @@
-# DevFusion Studio CMS v2.0
+# DevFusion KMS 3
 
-Запуск:
+Запуск локально:
+
 ```cmd
-cd devfusion_studio_cms
-py -m pip install -r requirements.txt
+pip install -r requirements.txt
 py app.py
 ```
 
-Скрытый вход:
-- на обычном сайте: нажать логотип DevFusion 20 раз;
-- на странице обслуживания: нажать клавишу A 5 раз.
+Render:
+- Build Command: `pip install -r requirements.txt`
+- Start Command: `gunicorn app:app`
+- PostgreSQL: создай PostgreSQL в Render и подключи `DATABASE_URL`
+- SMTP:
+  - `DEVFUSION_MAIL_USER`
+  - `DEVFUSION_MAIL_PASSWORD`
 
-Пароль по умолчанию:
-```text
-admin
-```
+Пароль админки по умолчанию: `admin`
 
-Есть:
-- редактор сайта;
-- темы;
-- загрузка CSS;
-- новости с фото/видео/аудио;
-- реклама с фото/видео;
-- новые плитки;
-- новые страницы;
-- режим обслуживания;
-- режим тестирования.
-
-
-## Отправка проекта на email
-
-Внизу сайта добавлена анкета:
-- реальное имя;
-- номер телефона;
-- название проекта;
-- описание;
-- файл-вложение.
-
-Чтобы письма реально приходили:
-
-```cmd
-set DEVFUSION_MAIL_USER=твоя_почта@gmail.com
-set DEVFUSION_MAIL_PASSWORD=пароль_приложения_gmail
-py app.py
-```
-
-Если SMTP не настроен, заявка будет выведена в консоль сервера.
+Командной строки нет. Все опасные действия вынесены в безопасные кнопки админ-панели.

@@ -1,5 +1,17 @@
 app.py syntax: OK
-templates/index.html: OK
-templates/base.html: OK
-static/uploads/orders: OK
+app.py: OK
+requirements.txt: OK
 README.md: OK
+.gitignore: OK
+templates/base.html: OK
+templates/index.html: OK
+templates/admin.html: OK
+templates/admin_login.html: OK
+templates/custom_page.html: OK
+templates/maintenance.html: OK
+static/style.css: OK
+static/script.js: OK
+static/uploads/ads/.gitkeep: OK
+static/uploads/news/.gitkeep: OK
+static/uploads/orders/.gitkeep: OK
+static/custom/.gitkeep: OK
