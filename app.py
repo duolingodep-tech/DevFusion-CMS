@@ -204,7 +204,7 @@ def send_project_email(real_name, phone, project_title, description, file_path=N
 # ВАЖНО: Render запускает проект командой gunicorn app:app.
 # При таком запуске блок if __name__ == "__main__" НЕ выполняется.
 # Поэтому базу данных создаём сразу при импорте файла.
-init_database()
+
 
 
 @app.before_request
@@ -558,7 +558,12 @@ def send_project():
     else:
         flash("SMTP не настроен. Заявка выведена в консоль сервера.", "error")
 
-    return redirect(url_for("index") + "#send-project")
+        return redirect(url_for("index") + "#send-project")
+
+
+with app.app_context():
+    db.create_all()
+    setup()
 
 
 if __name__ == "__main__":
